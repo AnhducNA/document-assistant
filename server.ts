@@ -8,10 +8,17 @@ import path from "path";
 import { createServer as createViteServer } from "vite";
 import { GoogleGenAI, Type } from "@google/genai";
 import dotenv from "dotenv";
-import { createRequire } from "module";
-const require = createRequire(import.meta.url);
-// @ts-ignore
-const pdf = require("pdf-parse");
+import { PDFParse } from "pdf-parse";
+
+async function pdf(buffer: Buffer): Promise<{ text: string }> {
+  const parser = new PDFParse({ data: new Uint8Array(buffer) });
+  try {
+    const result = await parser.getText();
+    return { text: result.text || "" };
+  } finally {
+    await parser.destroy().catch(() => {});
+  }
+}
 import mammoth from "mammoth";
 
 dotenv.config();
@@ -267,7 +274,35 @@ async function extractTextFromBase64(base64Data: string, fileName: string, fileT
 
   if (fileType === "application/pdf" || ext === "pdf") {
     const data = await pdf(buffer);
-    return data.text || "";
+    const text = data.text || "";
+    
+    // Check if the extracted text is empty or only consists of page dividers/numbers
+    const cleanForCheck = text.replace(/--\s*\d+\s+of\s+\d+\s*--/gi, "").replace(/\s+/g, "").trim();
+    if (cleanForCheck.length < 50) {
+      console.log(`[PDF Parse] Phát hiện tệp PDF rỗng hoặc dạng ảnh quét (scanned PDF) không chứa text layer. Đang thực hiện nhận diện chữ (OCR) bằng Gemini...`);
+      try {
+        const response = await generateContentWithFallback({
+          contents: [
+            {
+              inlineData: {
+                data: base64Data,
+                mimeType: "application/pdf"
+              }
+            },
+            "Bạn là một Trợ lý chuyển đổi số tài liệu hành chính xuất sắc. Hãy đọc hình ảnh/nội dung của tài liệu PDF này và trích xuất/gõ lại toàn bộ nội dung văn bản một cách trung thực, đầy đủ và chính xác nhất bằng tiếng Việt. Không tóm tắt, không giải thích gì thêm, giữ nguyên định dạng đoạn văn nếu có thể, và chỉ trả về nội dung văn bản chính xác của tài liệu."
+          ]
+        });
+        
+        if (response && response.text) {
+          console.log(`[PDF Parse] Nhận diện chữ bằng Gemini thành công! Trích xuất được ${response.text.length} ký tự.`);
+          return response.text;
+        }
+      } catch (geminiError: any) {
+        console.error("Lỗi khi dùng Gemini OCR cho PDF:", geminiError);
+      }
+    }
+    
+    return text;
   } else if (
     fileType === "application/vnd.openxmlformats-officedocument.wordprocessingml.document" ||
     ext === "docx"
