@@ -40,12 +40,23 @@ const ai = new GoogleGenAI({
   },
 });
 
+function checkApiKey() {
+  const key = process.env.GEMINI_API_KEY;
+  if (!key || key.trim() === "" || key.trim() === "MY_GEMINI_API_KEY") {
+    throw new Error(
+      "Khóa API Gemini (GEMINI_API_KEY) chưa được thiết lập. Vui lòng vào mục Settings -> Secrets trong giao diện AI Studio để thiết lập khóa API Gemini của bạn."
+    );
+  }
+}
+
 // Robust model wrapper with automatic fallbacks for high load / demand (e.g. 503 error)
 async function generateContentWithFallback(params: {
   contents: any;
   config?: any;
 }) {
-  const modelsToTry = ["gemini-3.5-flash", "gemini-3.1-flash-lite", "gemini-flash-latest"];
+  checkApiKey();
+
+  const modelsToTry = ["gemini-2.5-flash", "gemini-2.5-pro", "gemini-1.5-flash"];
   let lastError: any = null;
 
   for (const model of modelsToTry) {
@@ -61,15 +72,30 @@ async function generateContentWithFallback(params: {
         return response;
       }
     } catch (err: any) {
-      console.warn(`[Gemini API] Lỗi model ${model}:`, err.message || err);
+      const errMsg = err.message || (typeof err === "string" ? err : JSON.stringify(err));
+      console.warn(`[Gemini API] Lỗi model ${model}:`, errMsg);
+
+      // Nếu lỗi là do API Key hoặc không có quyền (403/PERMISSION_DENIED), ném lỗi rõ ràng ngay lập tức
+      if (
+        errMsg.includes("403") || 
+        errMsg.includes("PERMISSION_DENIED") || 
+        errMsg.includes("API_KEY") ||
+        errMsg.includes("unregistered callers") ||
+        errMsg.includes("API key")
+      ) {
+        throw new Error(
+          `Khóa API Gemini (GEMINI_API_KEY) không hợp lệ hoặc không có quyền truy cập. Vui lòng kiểm tra hoặc cập nhật lại khóa API trong mục Settings -> Secrets ở giao diện AI Studio. (Chi tiết: ${errMsg})`
+        );
+      }
+
       lastError = err;
-      // If error is 503 or others, try next model in loop
+      // Thử model tiếp theo nếu gặp lỗi tải cao hoặc lỗi mạng khác
     }
   }
 
   // If all failed, throw a readable error
   throw new Error(
-    `Hệ thống AI hiện đang chịu tải cao (503 Service Unavailable). Xin vui lòng thử lại sau vài giây. Chi tiết lỗi: ${lastError?.message || lastError}`
+    `Hệ thống AI hiện đang chịu tải cao hoặc gặp lỗi. Xin vui lòng thử lại sau vài giây. Chi tiết lỗi cuối cùng: ${lastError?.message || lastError}`
   );
 }
 
