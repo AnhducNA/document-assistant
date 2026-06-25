@@ -121,7 +121,7 @@ export default function App() {
   }, [chatMessages, chatLoading]);
 
   // Selected document data helper
-  const selectedDoc = documents.find((doc) => doc.id === selectedDocId) || documents[0];
+  const selectedDoc = (documents || []).find((doc) => doc?.id === selectedDocId) || (documents || [])[0];
 
   // Toggle folder expansion
   const toggleFolder = (path: string) => {
@@ -343,32 +343,34 @@ export default function App() {
   };
 
   // Filter documents based on search
-  const filteredDocs = documents.filter((doc) => {
+  const filteredDocs = (documents || []).filter((doc) => {
+    if (!doc) return false;
     const term = searchTerm.toLowerCase();
     return (
-      doc.title.toLowerCase().includes(term) ||
-      doc.content.toLowerCase().includes(term) ||
-      doc.department.toLowerCase().includes(term) ||
-      doc.tags.some(t => t.toLowerCase().includes(term))
+      (doc.title || "").toLowerCase().includes(term) ||
+      (doc.content || "").toLowerCase().includes(term) ||
+      (doc.department || "").toLowerCase().includes(term) ||
+      (doc.tags || []).some(t => (t || "").toLowerCase().includes(term))
     );
   });
 
   // Render Folder Tree Nodes recursively
   const renderTreeNodes = (nodes: FolderNode[], depth = 0) => {
-    return nodes.map((node) => {
+    return (nodes || []).map((node) => {
       const isExpanded = expandedFolders[node.path];
-      const hasSearchMatch = searchTerm ? documents.some(
+      const hasSearchMatch = searchTerm ? (documents || []).some(
         (doc) => 
+          doc &&
           (doc.id === node.docId || node.path.includes(doc.department)) &&
-          (doc.title.toLowerCase().includes(searchTerm.toLowerCase()) || doc.tags.some(t => t.toLowerCase().includes(searchTerm.toLowerCase())))
+          ((doc.title || "").toLowerCase().includes(searchTerm.toLowerCase()) || (doc.tags || []).some(t => (t || "").toLowerCase().includes(searchTerm.toLowerCase())))
       ) : true;
 
       if (searchTerm && !hasSearchMatch && node.type === 'folder') {
         // Simple search pruning for folders
         const matchesInSubtree = node.children?.some(child => 
           child.type === 'document' ? 
-            documents.find(d => d.id === child.docId)?.title.toLowerCase().includes(searchTerm.toLowerCase()) :
-            child.children?.some(subChild => documents.find(d => d.id === subChild.docId)?.title.toLowerCase().includes(searchTerm.toLowerCase()))
+            (documents || []).find(d => d?.id === child.docId)?.title?.toLowerCase().includes(searchTerm.toLowerCase()) :
+            child.children?.some(subChild => (documents || []).find(d => d?.id === subChild.docId)?.title?.toLowerCase().includes(searchTerm.toLowerCase()))
         );
         if (!matchesInSubtree) return null;
       }

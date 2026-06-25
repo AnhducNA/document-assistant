@@ -5,6 +5,7 @@
 
 import express from "express";
 import path from "path";
+import fs from "fs";
 import { createServer as createViteServer } from "vite";
 import { GoogleGenAI, Type } from "@google/genai";
 import dotenv from "dotenv";
@@ -73,7 +74,9 @@ async function generateContentWithFallback(params: {
 }
 
 // Mock Database of Ministry of Foreign Affairs Documents (Vietnamese)
-let documents = [
+const DATA_DIR = path.join(process.cwd(), "data");
+
+const mockDocs = [
   {
     id: "doc-1",
     title: "Tuyên bố chung Việt Nam - Hoa Kỳ về nâng cấp quan hệ lên Đối tác Chiến lược Toàn diện",
@@ -214,6 +217,79 @@ Trước tình hình căng thẳng địa chính trị leo thang nghiêm trọng
     }
   }
 ];
+
+let documents: any[] = [];
+
+// Helper to save a single document to disk in department/docType folder structure
+function saveDocumentToDisk(doc: any) {
+  try {
+    const safeDept = doc.department.replace(/[\/\\?%*:|"<>\.]/g, "_");
+    const safeType = doc.docType.replace(/[\/\\?%*:|"<>\.]/g, "_");
+    const dirPath = path.join(DATA_DIR, safeDept, safeType);
+    
+    fs.mkdirSync(dirPath, { recursive: true });
+    
+    const filePath = path.join(dirPath, `${doc.id}.json`);
+    fs.writeFileSync(filePath, JSON.stringify(doc, null, 2), "utf8");
+  } catch (err) {
+    console.error(`Lỗi khi lưu tài liệu ${doc.id} lên đĩa:`, err);
+  }
+}
+
+// Helper to recursively scan directory for .json documents
+function getAllFiles(dirPath: string, arrayOfFiles: string[] = []): string[] {
+  if (!fs.existsSync(dirPath)) return arrayOfFiles;
+  const files = fs.readdirSync(dirPath);
+
+  files.forEach((file) => {
+    const nextPath = path.join(dirPath, file);
+    if (fs.statSync(nextPath).isDirectory()) {
+      arrayOfFiles = getAllFiles(nextPath, arrayOfFiles);
+    } else {
+      if (file.endsWith(".json")) {
+        arrayOfFiles.push(nextPath);
+      }
+    }
+  });
+
+  return arrayOfFiles;
+}
+
+// Load documents from disk or initialize with mock data
+function initStorage() {
+  if (!fs.existsSync(DATA_DIR)) {
+    fs.mkdirSync(DATA_DIR, { recursive: true });
+    mockDocs.forEach((doc) => {
+      saveDocumentToDisk(doc);
+    });
+    documents = [...mockDocs];
+    console.log("Khởi tạo kho lưu trữ tài liệu mẫu thành công.");
+  } else {
+    const files = getAllFiles(DATA_DIR);
+    if (files.length === 0) {
+      mockDocs.forEach((doc) => {
+        saveDocumentToDisk(doc);
+      });
+      documents = [...mockDocs];
+      console.log("Kho trống, khởi tạo tài liệu mẫu thành công.");
+    } else {
+      const loaded: any[] = [];
+      files.forEach((file) => {
+        try {
+          const content = fs.readFileSync(file, "utf8");
+          const doc = JSON.parse(content);
+          if (doc && doc.id) {
+            loaded.push(doc);
+          }
+        } catch (err) {
+          console.error("Lỗi khi đọc file tài liệu từ đĩa:", file, err);
+        }
+      });
+      documents = loaded;
+      console.log(`Đã tải thành công ${documents.length} tài liệu từ đĩa.`);
+    }
+  }
+}
 
 // Helper to construct the document tree based on department and docType
 function buildDocumentTree(docsList: typeof documents) {
@@ -448,10 +524,12 @@ Lưu ý: Chỉ trả về định dạng JSON thuần túy, không có thẻ bao
     };
 
     documents.push(newDoc);
+    saveDocumentToDisk(newDoc);
 
     res.json({
       message: "Tài liệu đã được tải lên và phân loại tự động thành công!",
       document: newDoc,
+      documents,
       tree: buildDocumentTree(documents),
     });
   } catch (error) {
@@ -615,6 +693,8 @@ Cấu trúc JSON yêu cầu:
 
 // Configure Vite or Static Asset Serving
 async function startServer() {
+  initStorage();
+
   if (process.env.NODE_ENV !== "production") {
     const vite = await createViteServer({
       server: { middlewareMode: true },
