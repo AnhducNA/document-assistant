@@ -8,8 +8,10 @@ import path from "path";
 import { createServer as createViteServer } from "vite";
 import { GoogleGenAI, Type } from "@google/genai";
 import dotenv from "dotenv";
+import { createRequire } from "module";
+const require = createRequire(import.meta.url);
 // @ts-ignore
-import pdf from "pdf-parse";
+const pdf = require("pdf-parse");
 import mammoth from "mammoth";
 
 dotenv.config();

@@ -45,9 +45,6 @@ export default function App() {
   const [searchTerm, setSearchTerm] = useState<string>("");
   const [activeTab, setActiveTab] = useState<"study" | "chat" | "compare">("study");
   
-  // IT Advisory state (Collapsible)
-  const [showAdvisor, setShowAdvisor] = useState<boolean>(true);
-
   // Chatbot states
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([
     {
@@ -468,89 +465,10 @@ export default function App() {
               <Upload className="h-4 w-4" />
               Tải Lên Văn Bản Mới
             </button>
-            <button
-              onClick={() => setShowAdvisor(prev => !prev)}
-              className="flex items-center gap-1 text-xs text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-700 px-3 py-2 rounded-lg border border-slate-700 transition"
-              id="btn-toggle-advisor"
-            >
-              <Info className="h-4 w-4 text-amber-400" />
-              {showAdvisor ? "Ẩn Tư vấn" : "Hiện Tư vấn CN"}
-            </button>
           </div>
         </div>
         <div className="h-1 bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-600"></div>
       </header>
-
-      {/* 2. Collapsible IT & Architecture Advisory Banner */}
-      <AnimatePresence>
-        {showAdvisor && (
-          <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: "auto", opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            className="bg-slate-900/5 text-slate-800 border-b border-slate-200 overflow-hidden"
-            id="advisory-panel"
-          >
-            <div className="max-w-7xl mx-auto px-4 py-4 md:py-5">
-              <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
-                <div className="flex items-start gap-3.5">
-                  <div className="p-2.5 bg-blue-50 text-blue-700 rounded-lg shrink-0 mt-0.5">
-                    <Building2 className="h-5 w-5" />
-                  </div>
-                  <div className="flex-1">
-                    <div className="flex items-center justify-between">
-                      <h2 className="text-sm md:text-base font-bold text-slate-900 font-display">
-                        TƯ VẤN KIẾN TRÚC CN: LỰA CHỌN APP HAY WEBSITE & CÔNG NGHỆ CHO BỘ NGOẠI GIAO?
-                      </h2>
-                      <button 
-                        onClick={() => setShowAdvisor(false)}
-                        className="text-slate-400 hover:text-slate-600 p-1 hover:bg-slate-100 rounded-full transition"
-                      >
-                        <X className="h-4 w-4" />
-                      </button>
-                    </div>
-                    
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-3.5 text-xs text-slate-600 leading-relaxed">
-                      {/* Left Block: App vs Website */}
-                      <div className="p-3.5 bg-slate-50 rounded-lg border border-slate-100">
-                        <h3 className="font-semibold text-slate-800 flex items-center gap-1.5 mb-2">
-                          <CheckCircle className="h-4 w-4 text-emerald-600" />
-                          Nên xây dựng Website (Web App Desktop-First)
-                        </h3>
-                        <p className="mb-2">
-                          Đối với nghiệp vụ tại <strong>Bộ Ngoại Giao</strong>, việc nghiên cứu, đọc tài liệu hàng trăm trang, soạn thảo báo cáo lãnh đạo chủ yếu diễn ra trên máy tính văn phòng tại cơ quan để đảm bảo tính tập trung, độ an toàn và thuận lợi khi kết xuất.
-                        </p>
-                        <ul className="space-y-1.5 pl-4 list-disc text-slate-500">
-                          <li><strong>Không gian hiển thị lớn:</strong> Giúp đối chiếu song hành (side-by-side) hai tài liệu cực kỳ dễ dàng.</li>
-                          <li><strong>Tương thích hệ thống có sẵn:</strong> Tích hợp sâu vào mạng truyền số liệu chuyên dùng của Đảng, Nhà nước.</li>
-                          <li><strong>Bảo mật cao:</strong> Quản lý kiểm soát truy cập và phòng ngừa thất thoát dữ liệu (DLP) tốt hơn nhiều so với thiết bị di động cá nhân.</li>
-                        </ul>
-                      </div>
-
-                      {/* Right Block: Technology Stack */}
-                      <div className="p-3.5 bg-slate-50 rounded-lg border border-slate-100">
-                        <h3 className="font-semibold text-slate-800 flex items-center gap-1.5 mb-2">
-                          <Compass className="h-4 w-4 text-blue-600" />
-                          Đề xuất Gói Công nghệ Quốc gia bảo mật
-                        </h3>
-                        <p className="mb-2">
-                          Để triển khai hệ thống Trợ lý thông minh đạt chuẩn hiệu năng và an ninh tuyệt đối:
-                        </p>
-                        <ul className="space-y-1 text-slate-500 pl-1">
-                          <li>• <strong>Frontend:</strong> React JS kết hợp Tailwind CSS giúp giao diện mượt mà, phản hồi lập tức.</li>
-                          <li>• <strong>Backend:</strong> Node.js (Express) làm lớp cổng bảo vệ, hoàn toàn che giấu khóa API ngoại tuyến.</li>
-                          <li>• <strong>Lõi Trí Tuệ Nhân Tạo:</strong> <strong>Gemini 3.5 Flash</strong> (mô hình thông minh thế hệ mới, hỗ trợ ngữ cảnh siêu rộng, cực kỳ tối ưu về tốc độ tóm tắt và độ chính xác lý luận ngoại giao).</li>
-                          <li>• <strong>Định tuyến AI:</strong> Phân loại tự động tài liệu thông qua JSON Schema nghiêm ngặt.</li>
-                        </ul>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
 
       {/* 3. Main Workspace */}
       <div className="flex-1 max-w-7xl w-full mx-auto px-4 py-4 md:py-6 grid grid-cols-1 lg:grid-cols-12 gap-5 items-stretch" id="main-workspace">
