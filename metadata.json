@@ -1,0 +1,6 @@
+{
+  "name": "Trợ lý Văn bản Bộ Ngoại giao",
+  "description": "Hệ thống hỗ trợ giải đáp văn bản thông minh, tự động tóm tắt, trích xuất thông tin, so sánh tài liệu và phân loại tài liệu tự động theo cơ cấu Bộ Ngoại giao.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
